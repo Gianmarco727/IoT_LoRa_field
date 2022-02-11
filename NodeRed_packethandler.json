@@ -1,0 +1,233 @@
+[
+    {
+        "id": "2bf798674211022d",
+        "type": "tab",
+        "label": "IoT_project",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "9fd98fb3f73acd35",
+        "type": "serial-port",
+        "serialport": "/dev/ttyACM0",
+        "serialbaud": "9600",
+        "databits": "8",
+        "parity": "none",
+        "stopbits": "1",
+        "waitfor": "",
+        "dtr": "none",
+        "rts": "none",
+        "cts": "none",
+        "dsr": "none",
+        "newline": "\\n",
+        "bin": "false",
+        "out": "char",
+        "addchar": "",
+        "responsetimeout": "10000"
+    },
+    {
+        "id": "520f5503293af1bd",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": "8086",
+        "protocol": "http",
+        "database": "database",
+        "name": "influx",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://#your_ip#:8086",
+        "rejectUnauthorized": false
+    },
+    {
+        "id": "c23e074b380d2275",
+        "type": "debug",
+        "z": "2bf798674211022d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 270,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "99808ba21b9996c9",
+        "type": "serial in",
+        "z": "2bf798674211022d",
+        "name": "arduino",
+        "serial": "9fd98fb3f73acd35",
+        "x": 100,
+        "y": 180,
+        "wires": [
+            [
+                "c23e074b380d2275",
+                "486beec4ac30f0ce"
+            ]
+        ]
+    },
+    {
+        "id": "486beec4ac30f0ce",
+        "type": "function",
+        "z": "2bf798674211022d",
+        "name": "packet manager",
+        "func": "\nvar str = msg.payload;\nvar parts = str.split(\",\");\nvar ID=parts[0];\nglobal.set(\"globalID\",ID);\n    msg.payload = [{\n        \n        moisture: parseInt(parts[1]),\n        temperature: parseFloat(parts[2]),\n        humidity: parseFloat(parts[3]),\n        SOH: parseInt(parts[4]),\n        gps_lat: parseFloat(parts[5]),\n        gps_long: parseFloat(parts[6]),\n        RSSI: parseInt(parts[7])\n    },{\n        tag1: parts[0]\n    }]\nreturn msg\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 280,
+        "y": 220,
+        "wires": [
+            [
+                "4762d6aabca72b42",
+                "81a514b54e0c4d92",
+                "e39b5297925dcf41",
+                "264ef839d5e93dcd"
+            ]
+        ]
+    },
+    {
+        "id": "4762d6aabca72b42",
+        "type": "debug",
+        "z": "2bf798674211022d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 530,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "81a514b54e0c4d92",
+        "type": "influxdb out",
+        "z": "2bf798674211022d",
+        "influxdb": "520f5503293af1bd",
+        "name": "",
+        "measurement": "data",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "s",
+        "retentionPolicyV18Flux": "",
+        "org": "field",
+        "bucket": "test1",
+        "x": 540,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "79e5448fc4ef23fd",
+        "type": "serial out",
+        "z": "2bf798674211022d",
+        "name": "",
+        "serial": "9fd98fb3f73acd35",
+        "x": 960,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "e39b5297925dcf41",
+        "type": "file in",
+        "z": "2bf798674211022d",
+        "name": "read_file",
+        "filename": "/home/pi/Arduino/LoRaReceiver_Final/config.txt",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 520,
+        "y": 300,
+        "wires": [
+            [
+                "f888ebe3b10f11d6",
+                "549eae524ba3d06f"
+            ]
+        ]
+    },
+    {
+        "id": "549eae524ba3d06f",
+        "type": "function",
+        "z": "2bf798674211022d",
+        "name": "",
+        "func": "//here I import previous settings to compare them with the new ones\n// and also I import the ID of the sender taken from the packet manager function\n\nvar save=context.get(\"save\");\nvar device=global.get(\"globalID\");\n\n\nvar parts = msg.payload.split(\"#\");\nif(msg.payload != save && parts[0]==device){\ncontext.set(\"save\",msg.payload);\n//msg.payload=msg.payload\n\n}else{\n    msg.payload=device\n        \n    }\n\n\nreturn msg;\n\n\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\nvar save=0;\n",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 360,
+        "wires": [
+            [
+                "79e5448fc4ef23fd",
+                "98f877c0269e840e"
+            ]
+        ]
+    },
+    {
+        "id": "98f877c0269e840e",
+        "type": "debug",
+        "z": "2bf798674211022d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 950,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "f888ebe3b10f11d6",
+        "type": "debug",
+        "z": "2bf798674211022d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 770,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "264ef839d5e93dcd",
+        "type": "influxdb out",
+        "z": "2bf798674211022d",
+        "d": true,
+        "influxdb": "520f5503293af1bd",
+        "name": "myfield bucket",
+        "measurement": "data",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "s",
+        "retentionPolicyV18Flux": "",
+        "org": "field",
+        "bucket": "myfield",
+        "x": 560,
+        "y": 120,
+        "wires": []
+    }
+]
